@@ -1,5 +1,5 @@
 import os
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException
+from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Depends
 from typing import Optional
 from datetime import datetime
 import cloudinary
@@ -8,154 +8,114 @@ from fastapi.responses import JSONResponse
 from bson import ObjectId
 from dotenv import load_dotenv
 from database import db
-from fastapi.encoders import jsonable_encoder
+from utils.auth import get_current_user
+
 # Load environment variables
 load_dotenv()
 
 # Initialize router
 router = APIRouter(tags=["Questions"])
 
-# Cloudinary config
+# Configure Cloudinary
 cloudinary.config(
-    cloud_name="dpab6rwk6",
-    api_key="643176234975145",
-    api_secret="Z_a-vSfNAEE4ShTSBlvvK6Lk2tg"  # Note: Don't expose secrets in production
+    cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
+    api_key=os.getenv("CLOUDINARY_API_KEY"),
+    api_secret=os.getenv("CLOUDINARY_API_SECRET")
 )
-
 @router.get("/questions")
 async def get_all_questions():
     try:
-        # Use synchronous iteration for PyMongo
-        questions_cursor = db.questions.find().sort("created_at", -1)
-        questions = []
-        for question in questions_cursor:
-            question["_id"] = str(question["_id"])
-            question["author_id"] = str(question["author_id"])
-            questions.append(question)
-
+        questions = list(db.questions.find().sort("created_at", -1))
+        for q in questions:
+            q["_id"] = str(q["_id"])
+            q["author_id"] = str(q["author_id"])
+            q["created_at"] = q["created_at"].isoformat()
         return {"success": True, "count": len(questions), "data": questions}
     except Exception as e:
-        print(f"Database error: {str(e)}")
+        print("Error fetching questions:", e)
         raise HTTPException(status_code=500, detail="Failed to fetch questions")
 
+@router.get("/questions/{question_id}")
+async def get_question_by_id(question_id: str):
+    try:
+        if not ObjectId.is_valid(question_id):
+            raise HTTPException(status_code=400, detail="Invalid question ID")
+
+        question = db.questions.find_one({"_id": ObjectId(question_id)})
+        if not question:
+            raise HTTPException(status_code=404, detail="Question not found")
+
+        question["_id"] = str(question["_id"])
+        question["author_id"] = str(question["author_id"])
+        question["created_at"] = question["created_at"].isoformat()
+
+        return {"success": True, "data": question}
+    except HTTPException:
+        raise
+    except Exception as e:
+        print("Error fetching question by ID:", e)
+        raise HTTPException(status_code=500, detail="Failed to fetch question")
 
 @router.post("/questions")
 async def post_question(
     title: str = Form(...),
     description: str = Form(...),
     tags_str: str = Form(...),
-    author_id: str = Form(...),
-    file: Optional[UploadFile] = File(None)  # Make it explicitly Optional
+    file: Optional[UploadFile] = File(None),
+    current_user: dict = Depends(get_current_user)
 ):
     try:
-        # Validate required fields
+        # Validate inputs
         if not title.strip():
             raise HTTPException(status_code=400, detail="Title cannot be empty")
         if not description.strip():
             raise HTTPException(status_code=400, detail="Description cannot be empty")
-        if not tags_str.strip():
-            raise HTTPException(status_code=400, detail="Tags cannot be empty")
 
-        # Validate author_id
-        try:
-            author_obj_id = ObjectId(author_id)
-        except Exception:
-            raise HTTPException(status_code=400, detail="Invalid author_id format")
-
-        # Parse tags
+        # Parse comma-separated tags
         tags = [tag.strip() for tag in tags_str.split(",") if tag.strip()]
-        if not tags:
-            raise HTTPException(status_code=400, detail="At least one valid tag is required")
 
-        # Initialize attachment_url
+        # Initialize attachment URL
         attachment_url = None
 
-        # Upload file if provided
-        if file and file.filename:  # Check if file exists and has a filename
+        # Upload file to Cloudinary (unsigned)
+        if file and file.filename:
             try:
-                # Validate file type if needed
-                allowed_types = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf']
-                if file.content_type not in allowed_types:
-                    raise HTTPException(
-                        status_code=400, 
-                        detail=f"File type {file.content_type} not allowed"
-                    )
-                
-                # Upload to Cloudinary
                 result = unsigned_upload(file.file, upload_preset="questions")
-                attachment_url = result.get('secure_url')  # Get the secure URL from result
-                
-            except HTTPException:
-                raise
+                attachment_url = result.get("secure_url")
             except Exception as e:
-                print(f"File upload error: {str(e)}")
                 raise HTTPException(status_code=500, detail=f"File upload failed: {str(e)}")
 
-        # Construct question object
-        current_time = datetime.utcnow()
+        # Construct DB entry
         question = {
             "title": title.strip(),
             "description": description.strip(),
             "tags": tags,
-            "author_id": author_obj_id,
-            "created_at": current_time,
+            "author_id": ObjectId(current_user["user_id"]),
+            "created_at": datetime.utcnow(),
             "attachment_url": attachment_url
         }
 
-        # Insert into DB
-        try:
-            result = db.questions.insert_one(question)
-        except Exception as e:
-            print(f"Database error: {str(e)}")
-            raise HTTPException(status_code=500, detail="Failed to save question to database")
+        # Insert into MongoDB
+        result = db.questions.insert_one(question)
 
-        # Return success response
-        return JSONResponse(
-            status_code=201,
-            content={
-                "success": True,
-                "filename": file.filename if file and file.filename else None,
-                "message": "Question posted successfully!",
-                "data": {
-                    "question_id": str(result.inserted_id),
-                    "title": title.strip(),
-                    "description": description.strip(),
-                    "tags": tags,
-                    "author_id": author_id,
-                    "attachment_url": attachment_url,
-                    "created_at": current_time.isoformat()
-                }
+        # Response
+        return JSONResponse({
+            "success": True,
+            "filename": file.filename if file else None,
+            "message": "Question posted successfully!",
+            "data": {
+                "question_id": str(result.inserted_id),
+                "title": title.strip(),
+                "description": description.strip(),
+                "tags": tags,
+                "author_id": current_user["user_id"],
+                "attachment_url": attachment_url,
+                "created_at": datetime.utcnow().isoformat()
             }
-        )
+        })
 
     except HTTPException:
         raise
     except Exception as e:
-        print(f"Unexpected error: {str(e)}")
+        print("Unexpected error:", e)
         raise HTTPException(status_code=500, detail="Internal Server Error")
-    
-@router.get("/questions/{question_id}")
-async def get_question_by_id(question_id: str):
-    try:
-        # Validate and convert question_id to ObjectId
-        try:
-            obj_id = ObjectId(question_id)
-        except Exception:
-            raise HTTPException(status_code=400, detail="Invalid question_id format")
-
-      
-        question = db.questions.find_one({"_id": obj_id})
-
-        if not question:
-            raise HTTPException(status_code=404, detail="Question not found")
-
-        # Convert ObjectId fields to strings
-        question["_id"] = str(question["_id"])
-        question["author_id"] = str(question["author_id"])
-
-        return {"success": True, "data": question}
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"Database error: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to fetch question")

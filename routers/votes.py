@@ -1,11 +1,14 @@
-from fastapi import APIRouter,HTTPException
+from fastapi import APIRouter,HTTPException,Depends
+from fastapi.security import OAuth2PasswordBearer
 from bson import ObjectId
 from database import db
-
+from utils.auth import decode_access_token,get_current_user
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 router = APIRouter()
 
 @router.post("/answers/{answer_id}/vote",tags=["Answers"])
-def vote_answer(answer_id: str, vote: int):
+def vote_answer(answer_id: str, vote: int, current_user=Depends(get_current_user)):
+    user_id = current_user["user_id"]
     # Validate vote value
     if vote not in [1, -1]:
         raise HTTPException(status_code=400, detail="Invalid vote value. Must be 1 (upvote) or -1 (downvote)")
@@ -34,6 +37,7 @@ def vote_answer(answer_id: str, vote: int):
     return {"message": "Vote recorded"}
 @router.post("/answers/{answer_id}/accept",tags=["Answers"]
 )
-def accept_answer(answer_id: str):
+def accept_answer(answer_id: str,current_user=Depends(get_current_user)):
+    user_id = current_user["user_id"]
     db.answers.update_one({"_id": ObjectId(answer_id)}, {"$set": {"is_accepted": True}})
     return {"message": "Answer accepted"}

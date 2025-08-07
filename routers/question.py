@@ -1,5 +1,5 @@
 import os
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException
+from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Depends, status
 from typing import Optional
 from datetime import datetime
 import cloudinary
@@ -8,6 +8,8 @@ from fastapi.responses import JSONResponse
 from bson import ObjectId
 from dotenv import load_dotenv
 from database import db
+from utils.auth import get_current_user  # Import from utils
+from fastapi.security import OAuth2PasswordBearer
 
 # Load environment variables
 load_dotenv()
@@ -19,39 +21,38 @@ router = APIRouter(tags=["Questions"])
 cloudinary.config(
     cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
     api_key=os.getenv("CLOUDINARY_API_KEY"),
-    api_secret=os.getenv("CLOUDINARY_API_SECRET")  # Note: Don't expose secrets in production
+    api_secret=os.getenv("CLOUDINARY_API_SECRET")
 )
-
 
 @router.post("/questions")
 async def post_question(
     title: str = Form(...),
     description: str = Form(...),
     tags_str: str = Form(...),
-    author_id: str = Form(...),
-    file: UploadFile = File(None)
+    author_id: str = Form(...),  # Keep this to match client request
+    file: UploadFile = File(None),
+    current_user=Depends(get_current_user)  # Authentication dependency
 ):
+    user_id = current_user["user_id"]
     try:
+        # Note: author_id from form is ignored, using authenticated user instead
+        # Validate inputs
         if not title.strip():
             raise HTTPException(status_code=400, detail="Title cannot be empty")
         if not description.strip():
             raise HTTPException(status_code=400, detail="Description cannot be empty")
 
-        # Validate author_id
-        try:
-            author_obj_id = ObjectId(author_id)
-        except Exception:
-            raise HTTPException(status_code=400, detail="Invalid author_id format")
-
         # Parse tags
         tags = [tag.strip() for tag in tags_str.split(",") if tag.strip()]
-        #attachment_url = None
+        
+        # Initialize attachment_url
+        attachment_url = None
 
         # Upload file if provided
-        if file:
+        if file and file.filename:
             try:
                 result = unsigned_upload(file.file, upload_preset="questions")
-                attachment_url = result
+                attachment_url = result.get("secure_url")  # Get the URL from result
             except Exception as e:
                 raise HTTPException(status_code=500, detail=f"File upload failed: {str(e)}")
 
@@ -60,7 +61,7 @@ async def post_question(
             "title": title.strip(),
             "description": description.strip(),
             "tags": tags,
-            "author_id": author_obj_id,
+            "author_id": ObjectId(current_user["user_id"]),  # Use authenticated user ID
             "created_at": datetime.utcnow(),
             "attachment_url": attachment_url
         }
@@ -78,7 +79,7 @@ async def post_question(
                 "title": title.strip(),
                 "description": description.strip(),
                 "tags": tags,
-                "author_id": author_id,
+                "author_id": current_user["user_id"],  # Return the authenticated user ID
                 "attachment_url": attachment_url,
                 "created_at": datetime.utcnow().isoformat()
             }

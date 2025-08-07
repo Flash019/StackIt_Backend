@@ -1,10 +1,24 @@
-from fastapi import APIRouter, HTTPException, Body, Depends
+from fastapi import APIRouter, HTTPException, Body, Depends, status
 from bson import ObjectId
 from datetime import datetime
 from database import db
 from utils.auth import get_current_user  # This should return the user dict with "user_id"
+from fastapi.security import OAuth2PasswordBearer
+from utils.auth import decode_access_token
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
 router = APIRouter(tags=["Users Can Flag a Question and Answer "])
+
+def get_current_user(token: str = Depends(oauth2_scheme)):
+    payload = decode_access_token(token)
+    if not payload:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or missing token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return payload  # contains user_id, email, etc.
+
 
 @router.post("/questions/{question_id}/flag")
 def user_flag_question(
