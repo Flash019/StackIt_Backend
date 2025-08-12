@@ -13,8 +13,8 @@ security = HTTPBasic()
 
 #  Very simple admin auth — use real auth in production
 def verify_admin(credentials: HTTPBasicCredentials = Depends(security)):
-    correct_username = secrets.compare_digest(credentials.username, "Apexars")
-    correct_password = secrets.compare_digest(credentials.password, "Sov@King")
+    correct_username = secrets.compare_digest(credentials.username, "soumya@admin.com")
+    correct_password = secrets.compare_digest(credentials.password, "bwu@1234")
     if not (correct_username and correct_password):
         raise HTTPException(status_code=401, detail="Unauthorized")
 
