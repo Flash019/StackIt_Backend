@@ -1,8 +1,8 @@
 # Welcome to StackIt-Backend
 
 <p align="center">
-  <img src="assets/admin_panel.png" alt="Admin Panel" width="45%" style="margin-right:10px;">
-  <img src="assets/user_panel.png" alt="User Panel" width="45%">
+  <img src="admin_panel.png" alt="Admin Panel" width="45%" style="margin-right:10px;">
+  <img src="user_panel.png" alt="User Panel" width="45%">
 </p>
 
 *Powered by love, caffeine, and modern tech*  
