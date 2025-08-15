@@ -17,6 +17,22 @@
 - **MongoDB** — schema-flexible, scalable NoSQL storage that grows with you.
 
 It's the foundation for your next big app or microservice adventure!
+---
+
+## ✨ Features
+
+- **Q&A Posting System** – Users can post questions and share answers with the community.  
+- **Interactive Replies** – When someone answers your question, you instantly get a notification.  
+- **Edit & Update** – Both questions and answers can be edited to keep content accurate and fresh.  
+- **Blazing Fast API** – Powered by FastAPI’s async capabilities for lightning-quick responses.  
+- **Flexible Data Storage** – MongoDB handles dynamic Q&A data without complex migrations.  
+- **Secure Authentication** – JWT-based login and role-based access controls keep your data safe.  
+- **Auto-Generated Documentation** – Swagger UI at `/docs` and ReDoc at `/redoc` make API exploration a breeze.  
+- **Background Tasks** – Non-blocking notification processing and other async jobs.  
+- **Real-Time Communication** – WebSocket support for instant notifications and updates.  
+- **Scalable & CI/CD Ready** – Deploy seamlessly on Render or any cloud provider with zero downtime.  
+
+---
 
 ---
 
