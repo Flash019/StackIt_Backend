@@ -1,10 +1,15 @@
-#  Welcome to StackIt-Backend
+# Welcome to StackIt-Backend
 
-*Powered by love, caffeine, and modern tech *  
+<p align="center">
+  <img src="assets/admin_panel.png" alt="Admin Panel" width="45%" style="margin-right:10px;">
+  <img src="assets/user_panel.png" alt="User Panel" width="45%">
+</p>
+
+*Powered by love, caffeine, and modern tech*  
 
 ---
 
-##  About
+## About
 
 **StackIt-Backend** is a blazing-fast, flexible, and future-ready backend service built with:
 
@@ -15,7 +20,7 @@ It's the foundation for your next big app or microservice adventure!
 
 ---
 
-##  Tech Stack
+## Tech Stack
 
 | Layer        | Technology       | Why It Rocks                                                                                |
 |--------------|------------------|---------------------------------------------------------------------------------------------|
@@ -25,26 +30,18 @@ It's the foundation for your next big app or microservice adventure!
 
 ---
 
-##  Swagger API Docs
+## Swagger API Docs
 
-Check out interactive API docs and explore all endpoints in your running app:
-https://stackit-backend-44tz.onrender.com/docs
-
+Check out interactive API docs and explore all endpoints in your running app:  
+🔗 [Swagger UI](https://stackit-backend-44tz.onrender.com/docs)
 
 Dive in, try it out, and watch the magic happen in real time!
 
 ---
 
-##  Quick Start
+## Quick Start
 
 1. Clone this repo:
    ```bash
    git clone https://github.com/your-username/stackit-backend.git
    cd stackit-backend
-
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-
-uvicorn main:app --reload
-
