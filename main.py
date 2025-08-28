@@ -35,7 +35,11 @@ class SafeJSONResponse(JSONResponse):
 
 
 app = FastAPI(title="StackIt", debug=True)
-
+origins = [
+    "http://127.0.0.1:5500",  # Local frontend
+    "http://localhost:5500",
+      # Add your deployed frontend domain if any
+]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
