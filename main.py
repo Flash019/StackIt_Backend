@@ -43,12 +43,15 @@ origins = [
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-       "*"
-    ],  # <-- specify allowed origins explicitly, no "*"
+        "http://127.0.0.1:5500",
+        "http://localhost:5500",
+        "https://your-frontend-domain.com"  # Add deployed frontend domain
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 # Routers
 app.include_router(admin.router)
