@@ -2,9 +2,9 @@ from fastapi import APIRouter, HTTPException
 from models import schemas
 from repository import user
 
-router = APIRouter(prefix="/user", tags=["User"])
+router = APIRouter( )
 
-@router.post("/", response_model=schemas.ShowUser)
+@router.post("/auth/register", response_model=schemas.ShowUser)
 def create_user(request: schemas.User):
     return user.create(request)
 
