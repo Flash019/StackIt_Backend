@@ -18,7 +18,13 @@ def verify_admin(credentials: HTTPBasicCredentials = Depends(security)):
     if not (correct_username and correct_password):
         raise HTTPException(status_code=401, detail="Unauthorized")
 
-
+@router.get("")
+async def get_admin_stats():
+    return {
+        "total_users": 10,
+        "total_questions": 50,
+        "total_answers": 120
+    }
 @router.get("/questions")
 def admin_get_questions(credentials: HTTPBasicCredentials = Depends(verify_admin)):
     return {"data": admin_service.get_all_questions()}
