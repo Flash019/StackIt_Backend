@@ -7,6 +7,7 @@ from fastapi.responses import JSONResponse
 from routers import admin
 from starlette.status import HTTP_422_UNPROCESSABLE_ENTITY
 import json
+from fastapi.middleware.cors import CORSMiddleware
 
 
 # Optional: Safer JSONResponse to detect serialization issues
@@ -34,7 +35,13 @@ class SafeJSONResponse(JSONResponse):
 
 
 app = FastAPI(title="StackIt",debug=True)
-
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5000"],  # <-- allow your local frontend
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 # Routers
 
 app.include_router(admin.router)
