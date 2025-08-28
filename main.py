@@ -36,22 +36,18 @@ class SafeJSONResponse(JSONResponse):
 
 app = FastAPI(title="StackIt", debug=True)
 origins = [
-    "http://127.0.0.1:5500",  # Local frontend
+    "http://127.0.0.1:5500",  # Local development
     "http://localhost:5500",
-      # Add your deployed frontend domain if any
+    "https://stackit-frontend.vercel.app",  # Your Vercel frontend domain
 ]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://127.0.0.1:5500",
-        "http://localhost:5500",
-        "https://your-frontend-domain.com"  # Add deployed frontend domain
-    ],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 
 # Routers
 app.include_router(admin.router)
