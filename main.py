@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Request
-from routers import question, questions, answers, votes, notifications,flag
+from routers import question, questions, answers, votes, notifications, flag
 from routers import notifications_ws, user, authentication
 from middleware.rate_limit import RateLimitMiddleware
 from fastapi.exceptions import RequestValidationError
@@ -34,16 +34,20 @@ class SafeJSONResponse(JSONResponse):
             raise e
 
 
-app = FastAPI(title="StackIt",debug=True)
+app = FastAPI(title="StackIt", debug=True)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5000"],  # <-- allow your local frontend
+    allow_origins=[
+        "http://127.0.0.1:5500",
+        "http://localhost:5500"
+    ],  # <-- specify allowed origins explicitly, no "*"
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-# Routers
 
+# Routers
 app.include_router(admin.router)
 app.include_router(questions.router)
 app.include_router(question.router)
@@ -78,6 +82,3 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
             "body": body_str  # Safe for logging/debugging
         }
     )
-
-
-
